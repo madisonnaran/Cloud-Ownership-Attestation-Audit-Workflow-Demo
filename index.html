@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Paramount Admin Portal — ITAM</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#EEF1F8;color:#0D1526;font-size:13px}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+.mono{font-family:'SFMono-Regular',Consolas,monospace;font-size:11.5px}
+
+/* ══════ LAYOUT ══════ */
+.app-shell{display:flex;height:100vh;overflow:hidden}
+.main-area{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.main-scroll{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 28px 60px}
+
+/* ══════ SIDEBAR (matches Admin Portal reference design) ══════ */
+.sidebar{width:250px;flex-shrink:0;background:#ffffff;border-right:1px solid #e5e9f0;display:flex;flex-direction:column;height:100vh;overflow-y:auto;overflow-x:hidden;position:relative;transition:width .25s cubic-bezier(.4,0,.2,1)}
+.sidebar::-webkit-scrollbar{display:none}
+.sidebar.collapsed{width:64px}
+.sb-toggle{position:fixed;top:50%;transform:translateY(-50%);left:238px;width:20px;height:48px;border-radius:0 6px 6px 0;background:#e2e8f0;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:200;box-shadow:2px 0 6px rgba(0,0,0,.15);transition:left .25s cubic-bezier(.4,0,.2,1)}
+.sb-toggle:hover{background:#0050D0}
+.sb-toggle:hover svg{stroke:#fff}
+.sidebar.collapsed .sb-toggle{left:52px}
+.sb-toggle svg{transition:transform .25s;flex-shrink:0}
+.sidebar.collapsed .sb-toggle svg{transform:rotate(180deg)}
+
+.sb-brand{padding:20px 18px 16px;background:linear-gradient(160deg,#060d1c 0%,#0a1830 55%,#0d1f3d 100%);border-bottom:1px solid rgba(255,255,255,.08)}
+.sb-brand-row{display:flex;align-items:center;gap:11px}
+.sb-brand-icon{width:34px;height:34px;border-radius:50%;background:#0f172a;border:1px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-brand-name{font-size:16px;font-weight:800;line-height:1.15;background:linear-gradient(90deg,#ff8a5c,#ff5f8a);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sidebar.collapsed .sb-brand-name,.sidebar.collapsed .sb-brand-tag,.sidebar.collapsed .sb-label,.sidebar.collapsed .sb-section-lbl,.sidebar.collapsed .sb-badge{display:none}
+.sidebar.collapsed .sb-brand-row{justify-content:center}
+.sidebar.collapsed .sb-brand{padding:16px 0;display:flex;flex-direction:column;align-items:center}
+.sb-brand-tag{display:inline-flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:#9dc2ff;margin-top:13px;letter-spacing:.2px;background:rgba(59,130,246,.16);border:1px solid rgba(96,165,250,.32);padding:5px 12px;border-radius:20px}
+.sidebar.collapsed .sb-brand-tag{padding:5px;border-radius:50%}
+
+.sb-nav{padding:16px 12px 10px;flex:1}
+.sidebar.collapsed .sb-nav{padding:12px 8px}
+.sb-section-lbl{font-size:10px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:#94a3b8;padding:0 10px;margin-bottom:9px;margin-top:18px}
+.sb-section-lbl:first-child{margin-top:2px}
+
+.sb-item{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:12px;cursor:pointer;transition:all .15s;margin-bottom:4px}
+.sidebar.collapsed .sb-item{justify-content:center;padding:10px 0}
+.sb-item:hover:not(.active){background:#f1f5fb}
+.sb-item.active{background:#155DE8;box-shadow:0 6px 16px rgba(21,93,232,.28)}
+.sb-item-left{display:flex;align-items:center;gap:12px;min-width:0}
+.sidebar.collapsed .sb-item-left{gap:0}
+.sb-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#e7effe}
+.sidebar.collapsed .sb-icon{width:36px;height:36px;border-radius:10px}
+.sb-item.active .sb-icon{background:rgba(255,255,255,.2)}
+.sb-label{font-size:13px;font-weight:700;color:#0D1B36;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-item.active .sb-label{color:#fff}
+.sb-badge{font-size:9px;font-weight:700;min-width:18px;height:18px;padding:0 5px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-badge.amber{background:#f59e0b;color:#fff}
+.sb-item.active .sb-badge.amber{background:rgba(255,255,255,.9);color:#b45309}
+
+/* ══════ TOPBAR ══════ */
+.topbar{background:#ffffff;border-bottom:1px solid #e2e8f0;padding:14px 26px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-name{font-size:16px;font-weight:700;color:#0f172a;letter-spacing:-.2px}
+.tb-sub{font-size:11.5px;color:#64748b;margin-top:2px}
+.tb-right{display:flex;align-items:center;gap:10px}
+.tb-icon-btn{position:relative;width:36px;height:36px;border-radius:50%;background:#f1f5f9;border:1px solid #e2e8f0;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tb-icon-btn:hover{background:#e2e8f0}
+.tb-notif-dot{position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#ef4444;color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;border:1.5px solid #fff}
+.tb-user{display:flex;align-items:center;gap:8px;padding:5px 12px 5px 5px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:24px}
+.tb-av{width:27px;height:27px;border-radius:50%;background:linear-gradient(135deg,#155DE8,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:#fff}
+.tb-uname{font-size:12px;font-weight:650;color:#0f172a}
+.tb-urole{font-size:9.5px;color:#64748b}
+
+/* ══════ COMMON UI ══════ */
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:11.5px;color:#94a3b8;font-weight:600;margin-bottom:6px}
+.breadcrumb .cur{color:#155DE8}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:18px;gap:16px}
+.page-head h1{font-size:19px;font-weight:750}
+.page-head p{font-size:12.3px;color:#64748b;margin-top:3px}
+
+.btn{display:inline-flex;align-items:center;gap:7px;border-radius:8px;border:1px solid #e2e8f0;padding:8px 14px;font-size:12.6px;font-weight:650;background:#fff;color:#0f172a}
+.btn svg{width:14px;height:14px}
+.btn:hover{background:#f8fafc}
+.btn-primary{background:#155DE8;border-color:#155DE8;color:#fff}
+.btn-primary:hover{background:#0f47b8}
+.btn-green{background:#16a34a;border-color:#16a34a;color:#fff}
+.btn-green:hover{background:#0f7c37}
+.btn-sm{padding:5px 10px;font-size:11.5px}
+.btn-gold{background:#f59e0b;border-color:#f59e0b;color:#fff}
+.btn-gold:hover{filter:brightness(1.06)}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.kpi-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 17px;position:relative;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.kpi-accent{position:absolute;left:0;top:0;bottom:0;width:4px}
+.kpi-card .lbl{font-size:11px;font-weight:650;color:#64748b;margin-bottom:7px}
+.kpi-card .val{font-size:25px;font-weight:750;letter-spacing:-.01em}
+.kpi-card .sub{font-size:11px;margin-top:5px;font-weight:600;color:#94a3b8}
+
+.grid-2{display:grid;grid-template-columns:1.15fr 1fr;gap:16px;margin-bottom:20px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 1px 2px rgba(15,23,42,.04);padding:20px}
+.card-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-head h3{font-size:14px;font-weight:700}
+.card-head .hint{font-size:11.3px;color:#94a3b8}
+.ring-wrap{display:flex;align-items:center;gap:22px}
+.ring-legend{flex:1;display:flex;flex-direction:column;gap:9px}
+.legend-row{display:flex;align-items:center;gap:9px;font-size:12.4px}
+.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.legend-row .val{margin-left:auto;font-weight:700}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.search-box{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;flex:1;min-width:220px;max-width:320px}
+.search-box svg{width:14px;height:14px;color:#94a3b8;flex-shrink:0}
+.search-box input{border:none;outline:none;font-size:12.6px;width:100%;background:none;color:#0D1526}
+.filter-select{border:1px solid #e2e8f0;background:#fff;border-radius:8px;padding:8px 10px;font-size:12px;font-weight:600;color:#334155}
+.spacer{flex:1}
+
+.table-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;font-size:10.6px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:11px 15px;background:#f8fafc;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+tbody td{padding:12px 15px;border-bottom:1px solid #f1f5f9;font-size:12.6px;vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover{background:#fafbff}
+.app-cell .n{font-weight:650}
+.app-cell .i{font-size:11px;color:#94a3b8;margin-top:1px}
+.person-cell{display:flex;align-items:center;gap:7px}
+.p-av{width:22px;height:22px;border-radius:50%;background:#155DE8;color:#fff;font-size:9.5px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.p-av.gray{background:#94a3b8}
+.row-link{color:#155DE8;font-weight:650;font-size:12px}
+.row-link:hover{text-decoration:underline}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:3.5px 10px;border-radius:20px;font-size:10.8px;font-weight:700}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%}
+.badge.gray{background:#f1f5f9;color:#64748b}
+.badge.gray::before{background:#94a3b8}
+.badge.blue{background:#eff6ff;color:#1d4ed8}
+.badge.blue::before{background:#155DE8}
+.badge.amber{background:#fffbeb;color:#b45309}
+.badge.amber::before{background:#f59e0b}
+.badge.green{background:#f0fdf4;color:#15803d}
+.badge.green::before{background:#22c55e}
+.badge.red{background:#fef2f2;color:#b91c1c}
+.badge.red::before{background:#ef4444}
+
+.task-list{display:flex;flex-direction:column;gap:10px}
+.task-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 17px;display:flex;align-items:center;gap:16px;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.task-card.overdue{border-left:4px solid #dc2626}
+.task-card.due-soon{border-left:4px solid #f59e0b}
+.task-main{flex:1;min-width:0}
+.task-main .t{font-weight:700;font-size:13.2px}
+.task-main .s{font-size:11.8px;color:#64748b;margin-top:3px}
+.task-due{font-size:11.3px;color:#94a3b8;text-align:right;min-width:96px}
+.task-actions{display:flex;gap:8px}
+
+.progress-bar{height:7px;background:#f1f5f9;border-radius:6px;overflow:hidden}
+.progress-bar>div{height:100%;border-radius:6px}
+
+.section-view{display:none}
+.section-view.active{display:block;animation:fade .16s ease}
+@keyframes fade{from{opacity:0;transform:translateY(3px)}to{opacity:1;transform:none}}
+
+.stub-card{background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:44px 30px;text-align:center;box-shadow:0 1px 2px rgba(15,23,42,.04)}
+.stub-icon{width:52px;height:52px;border-radius:14px;background:#e7effe;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;color:#155DE8}
+.stub-icon svg{width:24px;height:24px}
+.stub-card h3{font-size:15.5px;font-weight:700;margin-bottom:6px}
+.stub-card p{font-size:12.6px;color:#64748b;max-width:420px;margin:0 auto}
+
+.overlay{position:fixed;inset:0;background:rgba(10,20,40,.5);display:none;align-items:flex-start;justify-content:center;padding:40px 20px;z-index:400;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:640px;box-shadow:0 24px 70px rgba(0,0,0,.28);animation:pop .16s ease}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.99)}to{opacity:1;transform:none}}
+.modal-head{display:flex;align-items:flex-start;justify-content:space-between;padding:19px 22px;border-bottom:1px solid #f1f5f9}
+.modal-head h2{font-size:16px;font-weight:750}
+.modal-head .sub{font-size:11.8px;color:#64748b;margin-top:3px}
+.modal-close{width:30px;height:30px;border-radius:8px;border:1px solid #e2e8f0;background:#f8fafc;display:flex;align-items:center;justify-content:center;color:#64748b;font-size:16px}
+.modal-close:hover{background:#fef2f2;color:#dc2626}
+.modal-body{padding:20px 22px;max-height:56vh;overflow-y:auto}
+.modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:15px 22px;border-top:1px solid #f1f5f9}
+.form-row{margin-bottom:13px}
+.form-row label{display:block;font-size:11.3px;font-weight:700;color:#64748b;margin-bottom:6px}
+.form-row select,.form-row input,.form-row textarea{width:100%;padding:9px 11px;border:1px solid #e2e8f0;border-radius:8px;font-size:12.6px;font-family:inherit}
+.form-row textarea{resize:vertical;min-height:66px}
+.check-row{display:flex;align-items:center;gap:11px;padding:10px 13px;border:1px solid #e2e8f0;border-radius:9px;background:#f8fafc;margin-bottom:8px}
+.check-row.done{background:#f0fdf4;border-color:#bbf7d0}
+.check-box{width:20px;height:20px;border-radius:5px;border:1.6px solid #94a3b8;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:12px}
+.check-row.done .check-box{background:#22c55e;border-color:#22c55e}
+.check-label{font-size:12.6px;font-weight:600;flex:1}
+.check-meta{font-size:10.8px;color:#94a3b8}
+.meta-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-bottom:18px}
+.meta-item .k{font-size:10.3px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.3px;margin-bottom:3px}
+.meta-item .v{font-size:12.8px;font-weight:650}
+.empty-state{text-align:center;padding:44px 20px;color:#64748b}
+.empty-state svg{width:40px;height:40px;color:#cbd5e1;margin-bottom:10px}
+.empty-state h4{font-size:13.6px;color:#0D1526;margin-bottom:4px}
+.empty-state p{font-size:12px}
+
+.toast{position:fixed;bottom:24px;right:24px;background:#0a1628;color:#fff;padding:13px 18px;border-radius:9px;font-size:12.6px;font-weight:600;box-shadow:0 12px 32px rgba(0,0,0,.3);display:flex;align-items:center;gap:9px;z-index:500;transform:translateY(20px);opacity:0;pointer-events:none;transition:all .22s ease}
+.toast.show{transform:translateY(0);opacity:1}
+.toast svg{width:16px;height:16px;color:#4ade80;flex-shrink:0}
+
+@media (max-width:1000px){
+  .kpi-row{grid-template-columns:repeat(2,1fr)}
+  .grid-2{grid-template-columns:1fr}
+  .meta-grid{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <div class="sidebar" id="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg width="10" height="16" viewBox="0 0 10 18" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="2 2 8 9 2 16"/></svg>
+    </div>
+    <div class="sb-brand">
+      <div class="sb-brand-row">
+        <div class="sb-brand-icon">
+          <svg width="18" height="18" viewBox="0 0 36 36" fill="none"><polygon points="18,7 27,26 9,26" fill="white" opacity="0.95"/><polygon points="18,7 23,18 13,18" fill="#0a1628"/><circle cx="10" cy="10" r="1.1" fill="white"/><circle cx="13" cy="7.5" r="1.1" fill="white"/><circle cx="18" cy="6.2" r="1.1" fill="white"/><circle cx="23" cy="7.5" r="1.1" fill="white"/><circle cx="26" cy="10" r="1.1" fill="white"/></svg>
+        </div>
+        <div class="sb-brand-name">Admin Portal</div>
+      </div>
+      <div class="sb-brand-tag"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> AWS &rarr; OCI</div>
+    </div>
+
+    <nav class="sb-nav">
+      <div class="sb-section-lbl">Main</div>
+      <div class="sb-item active" id="nav-dashboard" onclick="goTo('dashboard', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div><span class="sb-label">Dashboard</span></div>
+      </div>
+      <div class="sb-item" id="nav-insights" onclick="goTo('insights', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><span class="sb-label">Migration Insights</span></div>
+      </div>
+      <div class="sb-item" id="nav-assetreg" onclick="goTo('assetreg', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg></div><span class="sb-label">Asset Registry</span></div>
+      </div>
+      <div class="sb-item" id="nav-interview" onclick="goTo('interview', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><span class="sb-label">Interview Workspace</span></div>
+      </div>
+      <div class="sb-item" id="nav-services" onclick="goTo('services', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="4" width="6" height="6" rx="1.3"/><rect x="14" y="4" width="6" height="6" rx="1.3"/><rect x="4" y="14" width="6" height="6" rx="1.3"/><rect x="14" y="14" width="6" height="6" rx="1.3"/></svg></div><span class="sb-label">Services</span></div>
+      </div>
+      <div class="sb-item" id="nav-adminpanel" onclick="goTo('adminpanel', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg></div><span class="sb-label">Admin Panel</span></div>
+      </div>
+      <div class="sb-item" id="nav-auditlogs" onclick="goTo('auditlogs', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></div><span class="sb-label">User Audit Logs</span></div>
+      </div>
+
+      <div class="sb-section-lbl">ITAM</div>
+      <div class="sb-item" id="nav-myattestation" onclick="goTo('myattestation', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><span class="sb-label">My Attestation</span></div>
+        <span class="sb-badge amber" id="navMyCount">0</span>
+      </div>
+      <div class="sb-item" id="nav-ownerapps" onclick="goTo('ownerapps', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div><span class="sb-label">Owner Applications</span></div>
+      </div>
+      <div class="sb-item" id="nav-unclaimed" onclick="goTo('unclaimed', this)">
+        <div class="sb-item-left"><div class="sb-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#155DE8" stroke-width="2.2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.6L2.5 17a1.8 1.8 0 001.6 2.7h15.8a1.8 1.8 0 001.6-2.7L13.7 3.6a1.8 1.8 0 00-3.4 0Z"/></svg></div><span class="sb-label">Unclaimed Applications</span></div>
+        <span class="sb-badge amber" id="navUnclaimedCount">0</span>
+      </div>
+    </nav>
+  </div>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <div class="main-area">
+    <div class="topbar">
+      <div>
+        <div class="tb-name" id="tbName">Dashboard</div>
+        <div class="tb-sub" id="tbSub">Paramount Cloud Migration — Admin Portal</div>
+      </div>
+      <div class="tb-right">
+        <div class="tb-icon-btn" title="Notifications">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" stroke-width="2" stroke-linecap="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="tb-notif-dot" id="notifDot">0</span>
+        </div>
+        <div class="tb-user">
+          <div class="tb-av">EH</div>
+          <div><div class="tb-uname">Emily Harrington</div><div class="tb-urole">Admin</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-scroll">
+
+      <!-- ============ MAIN: DASHBOARD (placeholder landing) ============ -->
+      <div class="section-view active" id="view-dashboard">
+        <div class="page-head"><div><h1>Admin Portal Dashboard</h1><p>Programme-wide overview of the AWS &rarr; OCI migration</p></div></div>
+        <div class="stub-card">
+          <div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></div>
+          <h3>Main portal dashboard</h3>
+          <p>This view mirrors the full PCM Admin Portal dashboard (waves, asset counts, migration health). The new <b>ITAM</b> section below is fully built out in this prototype — select it from the sidebar to see My Attestation, Owner Applications, and Unclaimed Applications.</p>
+        </div>
+      </div>
+
+      <!-- ============ MAIN: STUB PAGES ============ -->
+      <div class="section-view" id="view-insights">
+        <div class="page-head"><div><h1>Migration Insights</h1><p>Wave-by-wave migration analytics</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div><h3>Migration Insights</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+      <div class="section-view" id="view-assetreg">
+        <div class="page-head"><div><h1>Asset Registry</h1><p>OCI &amp; AWS resource inventory</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="6" rx="1.5"/><rect x="3" y="14" width="18" height="6" rx="1.5"/></svg></div><h3>Asset Registry</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+      <div class="section-view" id="view-interview">
+        <div class="page-head"><div><h1>Interview Workspace</h1><p>Migration readiness interviews</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><h3>Interview Workspace</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+      <div class="section-view" id="view-services">
+        <div class="page-head"><div><h1>Services</h1><p>Service catalogue &amp; dependencies</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="6" height="6" rx="1.3"/><rect x="14" y="4" width="6" height="6" rx="1.3"/><rect x="4" y="14" width="6" height="6" rx="1.3"/><rect x="14" y="14" width="6" height="6" rx="1.3"/></svg></div><h3>Services</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+      <div class="section-view" id="view-adminpanel">
+        <div class="page-head"><div><h1>Admin Panel</h1><p>Wave assignment &amp; asset management</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 4v6c0 5-3.5 9-8 10-4.5-1-8-5-8-10V6z"/></svg></div><h3>Admin Panel</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+      <div class="section-view" id="view-auditlogs">
+        <div class="page-head"><div><h1>User Audit Logs</h1><p>Full user activity trail</p></div></div>
+        <div class="stub-card"><div class="stub-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="8" y1="7" x2="16" y2="7"/><line x1="8" y1="11" x2="16" y2="11"/><line x1="8" y1="15" x2="13" y2="15"/></svg></div><h3>User Audit Logs</h3><p>Existing feature from the main Admin Portal — not rebuilt in this ITAM prototype.</p></div>
+      </div>
+
+      <!-- ============ ITAM: MY ATTESTATION (includes dashboard top KPI part) ============ -->
+      <div class="section-view" id="view-myattestation">
+        <div class="breadcrumb">ITAM <span>&rsaquo;</span> <span class="cur">My Attestation</span></div>
+        <div class="page-head"><div><h1>My Attestation</h1><p>Programme attestation status, plus tasks awaiting your review</p></div></div>
+
+        <!-- dashboard top part -->
+        <div class="kpi-row" id="attKpis"></div>
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Attestation completion</h3><span class="hint">Q3 cycle · closes Sep 30</span></div>
+            <div class="ring-wrap">
+              <svg width="140" height="140" viewBox="0 0 140 140" id="donutSvg"></svg>
+              <div class="ring-legend" id="ringLegend"></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><h3>By capability</h3><span class="hint">Confirmed share</span></div>
+            <div id="capabilityBreakdown"></div>
+          </div>
+        </div>
+
+        <!-- task list -->
+        <div class="toolbar" style="margin-top:6px;">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="myTaskSearch" placeholder="Search my tasks..." oninput="renderMyTasks()">
+          </div>
+          <select class="filter-select" id="myTaskFilter" onchange="renderMyTasks()">
+            <option value="all">All statuses</option>
+            <option value="overdue">Overdue only</option>
+            <option value="due-soon">Due soon</option>
+            <option value="pending">Pending</option>
+          </select>
+          <div class="spacer"></div>
+          <button class="btn btn-primary" onclick="bulkAttest()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+            Attest all visible
+          </button>
+        </div>
+        <div class="task-list" id="myTaskList"></div>
+      </div>
+
+      <!-- ============ ITAM: OWNER APPLICATIONS ============ -->
+      <div class="section-view" id="view-ownerapps">
+        <div class="breadcrumb">ITAM <span>&rsaquo;</span> <span class="cur">Owner Applications</span></div>
+        <div class="page-head">
+          <div><h1>Owner Applications</h1><p>Every tracked application with its PCO and Technical Owner</p></div>
+          <button class="btn" onclick="showToast('Export started — CSV will download shortly.')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 19h16"/></svg>
+            Export view
+          </button>
+        </div>
+        <div class="toolbar">
+          <div class="search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="text" id="ownerSearch" placeholder="Search applications or owners..." oninput="renderOwnerAppsTable()">
+          </div>
+          <select class="filter-select" id="ownerStatusFilter" onchange="renderOwnerAppsTable()">
+            <option value="all">All statuses</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Pending">Pending</option>
+            <option value="Unclaimed">Unclaimed</option>
+          </select>
+        </div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Application</th><th>PCO</th><th>Technical Owner</th><th>Wave</th><th>Status</th><th>Last Attested</th><th></th></tr></thead>
+            <tbody id="ownerAppsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ============ ITAM: UNCLAIMED APPLICATIONS ============ -->
+      <div class="section-view" id="view-unclaimed">
+        <div class="breadcrumb">ITAM <span>&rsaquo;</span> <span class="cur">Unclaimed Applications</span></div>
+        <div class="page-head"><div><h1>Unclaimed Applications</h1><p>No confirmed owner — flagged after departed employees or unresponsive attestation cycles</p></div></div>
+        <div class="table-card">
+          <table>
+            <thead><tr><th>Application</th><th>Reason flagged</th><th>Last known contact</th><th>Cloud spend / mo</th><th>Flagged on</th><th></th></tr></thead>
+            <tbody id="unclaimedTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ================= REASSIGN OWNER MODAL ================= -->
+<div class="overlay" id="ownerModalOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><h2>Reassign owner</h2><div class="sub" id="ownerModalSub">—</div></div><button class="modal-close" onclick="closeModal('ownerModalOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="form-row"><label>Role to reassign</label><select id="reassignRole"><option value="pco">PCO</option><option value="to">Technical Owner</option></select></div>
+      <div class="form-row"><label>New owner</label><input type="text" id="reassignName" placeholder="Enter name..."></div>
+      <div class="form-row"><label>Reason for change</label><textarea id="reassignReason" placeholder="e.g. previous owner departed the organization"></textarea></div>
+    </div>
+    <div class="modal-foot"><button class="btn" onclick="closeModal('ownerModalOverlay')">Cancel</button><button class="btn btn-primary" onclick="submitReassign()">Save reassignment</button></div>
+  </div>
+</div>
+
+<!-- ================= APPLICATION DETAIL MODAL ================= -->
+<div class="overlay" id="appModalOverlay">
+  <div class="modal">
+    <div class="modal-head"><div><h2 id="modalAppName">—</h2><div class="sub" id="modalAppSub">—</div></div><button class="modal-close" onclick="closeModal('appModalOverlay')">✕</button></div>
+    <div class="modal-body">
+      <div class="meta-grid">
+        <div class="meta-item"><div class="k">PCO</div><div class="v" id="modalPco">—</div></div>
+        <div class="meta-item"><div class="k">Technical Owner</div><div class="v" id="modalTo">—</div></div>
+        <div class="meta-item"><div class="k">Status</div><div class="v" id="modalStatus">—</div></div>
+      </div>
+      <div style="font-size:12.6px;font-weight:700;margin-bottom:10px;">Validation checklist</div>
+      <div id="modalChecklist"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="closeModal('appModalOverlay')">Close</button>
+      <button class="btn btn-primary" id="modalAttestBtn" onclick="attestFromModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg> Confirm attestation</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg><span id="toastMsg"></span></div>
+
+<script>
+/* ===================================================================
+   MOCK DATA (shared across ITAM sub-sections)
+=================================================================== */
+const PCOS = ["Tom Whitaker","Jerry Callahan","Spike Donovan","Marcus Reid","Dana Whitfield"];
+const TOS  = ["Harrison Cole","Carlos Vega","Ling Zhou","Jordan Blake","Aisha Farouk"];
+const CAPS = ["Ad Sales","Streaming Platform","Content Ops","Broadcast","Data & Analytics"];
+const WAVES = ["Wave 1","Wave 2","Wave 3","Wave 4"];
+const NAME1 = ["Ad","Content","Media","Rights","Billing","Subscriber","Metadata","Playback","Encoding","Schedule","Talent","Royalty"];
+const NAME2 = ["Gateway","Portal","Engine","Hub","Manager","Service","Tracker","Console","Platform","Sync"];
+
+function seedRandom(seed){ let s = seed; return () => { s = (s*9301+49297)%233280; return s/233280; }; }
+const rnd = seedRandom(21);
+function pick(arr){ return arr[Math.floor(rnd()*arr.length)]; }
+function initials(name){ return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function daysAgo(n){ const d = new Date(2026,8,18); d.setDate(d.getDate()-n); return d; }
+function fmtDate(d){ return d ? d.toLocaleDateString('en-US',{month:'short', day:'numeric', year:'numeric'}) : '—'; }
+
+let applications = [];
+for(let i=0;i<48;i++){
+  const id = "PCM-" + String(3000+i);
+  const name = NAME1[i % NAME1.length] + " " + NAME2[(i*3)%NAME2.length];
+  const status = i < 26 ? "Confirmed" : (i < 40 ? "Pending" : "Unclaimed");
+  const lastAttestedDays = status === "Confirmed" ? Math.floor(rnd()*40)+1 : (status === "Pending" ? Math.floor(rnd()*140)+45 : Math.floor(rnd()*220)+90);
+  applications.push({
+    id, name,
+    pco: status === "Unclaimed" && rnd() > 0.4 ? null : pick(PCOS),
+    to: status === "Unclaimed" && rnd() > 0.6 ? null : pick(TOS),
+    status,
+    wave: pick(WAVES),
+    capability: pick(CAPS),
+    lastAttested: daysAgo(lastAttestedDays),
+    checklist: [
+      {label:"Application ownership confirmed", done: status === "Confirmed"},
+      {label:"Environment inventory validated", done: status !== "Unclaimed" && rnd() > 0.3},
+      {label:"Server list reconciled with OCI", done: status === "Confirmed" && rnd() > 0.2},
+      {label:"Cost allocation tag verified", done: status === "Confirmed" && rnd() > 0.4},
+    ],
+    spend: (300 + Math.floor(rnd()*4200)),
+  });
+}
+let unclaimedReasons = ["Owner left LTM — no reassignment on file","PCO attestation unresponsive for 3 cycles","Technical Owner account deactivated in ServiceNow","No ownership record found in Airtable source"];
+let unclaimedMeta = {};
+applications.filter(a=>a.status==="Unclaimed").forEach(a=>{ unclaimedMeta[a.id] = {reason: pick(unclaimedReasons), flaggedOn: daysAgo(Math.floor(rnd()*60)+5)}; });
+
+let currentModalApp = null;
+let currentOwnerModalApp = null;
+
+/* ===================================================================
+   NAVIGATION
+=================================================================== */
+const TITLES = {
+  dashboard:["Dashboard","Paramount Cloud Migration — Admin Portal"],
+  insights:["Migration Insights","Wave-by-wave migration analytics"],
+  assetreg:["Asset Registry","OCI & AWS resource inventory"],
+  interview:["Interview Workspace","Migration readiness interviews"],
+  services:["Services","Service catalogue & dependencies"],
+  adminpanel:["Admin Panel","Wave assignment & asset management"],
+  auditlogs:["User Audit Logs","Full user activity trail"],
+  myattestation:["My Attestation","Attestation overview and outstanding tasks"],
+  ownerapps:["Owner Applications","Applications with their PCO and Technical Owner"],
+  unclaimed:["Unclaimed Applications","Applications with no confirmed owner"],
+};
+function goTo(view, el){
+  document.querySelectorAll('.section-view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('view-'+view).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('active'));
+  if(el) el.classList.add('active');
+  document.getElementById('tbName').textContent = TITLES[view][0];
+  document.getElementById('tbSub').textContent = TITLES[view][1];
+  document.querySelector('.main-scroll').scrollTo({top:0, behavior:'smooth'});
+}
+function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('collapsed'); }
+
+/* ===================================================================
+   SHARED HELPERS
+=================================================================== */
+function statusBadge(status){
+  const cls = status === "Confirmed" ? "green" : status === "Pending" ? "amber" : "red";
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+function personCell(name, gray){
+  if(!name) return `<div class="person-cell"><div class="p-av gray">?</div><span style="color:#94a3b8;">Unassigned</span></div>`;
+  return `<div class="person-cell"><div class="p-av ${gray?'gray':''}">${initials(name)}</div><span>${name}</span></div>`;
+}
+
+/* ===================================================================
+   ITAM · MY ATTESTATION (dashboard top part + task list)
+=================================================================== */
+function renderAttestationDashboard(){
+  const total = applications.length;
+  const confirmed = applications.filter(a=>a.status==="Confirmed").length;
+  const pending = applications.filter(a=>a.status==="Pending").length;
+  const unclaimed = applications.filter(a=>a.status==="Unclaimed").length;
+
+  document.getElementById('attKpis').innerHTML = `
+    <div class="kpi-card"><div class="kpi-accent" style="background:#94a3b8"></div><div class="lbl">Total Applications</div><div class="val">${total}</div><div class="sub">Tracked for attestation</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:#22c55e"></div><div class="lbl">Confirmed</div><div class="val">${confirmed}</div><div class="sub">${Math.round(confirmed/total*100)}% of portfolio</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:#f59e0b"></div><div class="lbl">Pending Attestation</div><div class="val">${pending}</div><div class="sub">Avg 18 days outstanding</div></div>
+    <div class="kpi-card"><div class="kpi-accent" style="background:#ef4444"></div><div class="lbl">Unclaimed</div><div class="val">${unclaimed}</div><div class="sub">Needs new owner</div></div>
+  `;
+
+  const r = 55, c = 2*Math.PI*r;
+  const segC = (confirmed/total)*c, segP = (pending/total)*c, segO = (unclaimed/total)*c;
+  document.getElementById('donutSvg').innerHTML = `
+    <g transform="translate(70,70) rotate(-90)">
+      <circle r="${r}" fill="none" stroke="#EEF1F6" stroke-width="15"/>
+      <circle r="${r}" fill="none" stroke="#155DE8" stroke-width="15" stroke-dasharray="${segC} ${c-segC}" stroke-linecap="round"/>
+      <circle r="${r}" fill="none" stroke="#f59e0b" stroke-width="15" stroke-dasharray="${segP} ${c-segP}" stroke-dashoffset="${-segC}"/>
+      <circle r="${r}" fill="none" stroke="#ef4444" stroke-width="15" stroke-dasharray="${segO} ${c-segO}" stroke-dashoffset="${-(segC+segP)}"/>
+    </g>
+    <text x="70" y="65" text-anchor="middle" font-size="22" font-weight="700" fill="#0D1526">${Math.round(confirmed/total*100)}%</text>
+    <text x="70" y="84" text-anchor="middle" font-size="10.5" fill="#94a3b8">confirmed</text>
+  `;
+  document.getElementById('ringLegend').innerHTML = `
+    <div class="legend-row"><span class="legend-dot" style="background:#155DE8"></span>Confirmed <span class="val">${confirmed}</span></div>
+    <div class="legend-row"><span class="legend-dot" style="background:#f59e0b"></span>Pending <span class="val">${pending}</span></div>
+    <div class="legend-row"><span class="legend-dot" style="background:#ef4444"></span>Unclaimed <span class="val">${unclaimed}</span></div>
+  `;
+
+  const capStats = CAPS.map(cap=>{
+    const capApps = applications.filter(a=>a.capability===cap);
+    const conf = capApps.filter(a=>a.status==="Confirmed").length;
+    return {cap, total: capApps.length, pct: capApps.length ? Math.round(conf/capApps.length*100) : 0};
+  }).sort((a,b)=>b.total-a.total);
+  document.getElementById('capabilityBreakdown').innerHTML = capStats.map(cs=>`
+    <div style="margin-bottom:11px;">
+      <div style="display:flex;justify-content:space-between;font-size:12.2px;margin-bottom:5px;"><span style="font-weight:650;">${cs.cap}</span><span style="color:#64748b;">${cs.pct}% · ${cs.total} apps</span></div>
+      <div class="progress-bar"><div style="width:${cs.pct}%; background:${cs.pct>66?'#155DE8':cs.pct>33?'#f59e0b':'#ef4444'}"></div></div>
+    </div>
+  `).join('');
+}
+
+function renderMyTasks(){
+  const search = (document.getElementById('myTaskSearch').value || '').toLowerCase();
+  const filter = document.getElementById('myTaskFilter').value;
+  let tasks = applications.filter(a => a.status !== "Confirmed").map(a=>{
+    const daysSince = Math.floor((new Date(2026,8,18) - a.lastAttested) / (1000*60*60*24));
+    return {...a, overdue: daysSince > 90, dueSoon: daysSince > 60 && daysSince <= 90, daysSince};
+  });
+  tasks = tasks.filter(t => !search || t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search));
+  if(filter === 'overdue') tasks = tasks.filter(t=>t.overdue);
+  if(filter === 'due-soon') tasks = tasks.filter(t=>t.dueSoon);
+  if(filter === 'pending') tasks = tasks.filter(t=>t.status === 'Pending');
+  tasks.sort((a,b)=> b.daysSince - a.daysSince);
+
+  document.getElementById('navMyCount').textContent = tasks.filter(t=>t.overdue || t.dueSoon).length;
+
+  document.getElementById('myTaskList').innerHTML = tasks.length ? tasks.map(t=>`
+    <div class="task-card ${t.overdue?'overdue':(t.dueSoon?'due-soon':'')}">
+      <div class="task-main">
+        <div class="t">${t.name} <span class="mono" style="color:#94a3b8;font-weight:400;">${t.id}</span></div>
+        <div class="s">${t.capability} · Wave ${t.wave.replace('Wave ','')}</div>
+      </div>
+      <div class="task-due">
+        ${t.overdue ? '<span class="badge red">Overdue</span>' : t.dueSoon ? '<span class="badge amber">Due soon</span>' : '<span class="badge amber">Pending</span>'}
+        <div style="margin-top:5px;">${t.daysSince}d since last attested</div>
+      </div>
+      <div class="task-actions">
+        <button class="btn btn-sm" onclick="openAppModal('${t.id}')">Review</button>
+        <button class="btn btn-sm btn-primary" onclick="quickAttest('${t.id}')">Attest</button>
+      </div>
+    </div>
+  `).join('') : `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 6L9 17l-5-5"/></svg><h4>All caught up</h4><p>No outstanding attestation tasks match this filter.</p></div>`;
+}
+function quickAttest(id){
+  const app = applications.find(a=>a.id===id);
+  if(!app) return;
+  app.status = "Confirmed";
+  app.lastAttested = new Date(2026,8,18);
+  app.checklist.forEach(c=>c.done = true);
+  renderAll();
+  showToast(`${app.name} attested successfully.`);
+}
+function bulkAttest(){
+  const search = (document.getElementById('myTaskSearch').value || '').toLowerCase();
+  const filter = document.getElementById('myTaskFilter').value;
+  let tasks = applications.filter(a => a.status !== "Confirmed");
+  tasks = tasks.filter(t => !search || t.name.toLowerCase().includes(search) || t.id.toLowerCase().includes(search));
+  const daysSinceFn = (a)=>Math.floor((new Date(2026,8,18) - a.lastAttested) / (1000*60*60*24));
+  if(filter === 'overdue') tasks = tasks.filter(t=>daysSinceFn(t) > 90);
+  if(filter === 'due-soon') tasks = tasks.filter(t=>{const d=daysSinceFn(t); return d>60 && d<=90;});
+  if(filter === 'pending') tasks = tasks.filter(t=>t.status === 'Pending');
+  if(tasks.length === 0){ showToast('No visible tasks to attest.'); return; }
+  tasks.forEach(app=>{ app.status = "Confirmed"; app.lastAttested = new Date(2026,8,18); app.checklist.forEach(c=>c.done = true); });
+  renderAll();
+  showToast(`${tasks.length} application(s) attested.`);
+}
+function openAppModal(id){
+  const app = applications.find(a=>a.id===id);
+  currentModalApp = app;
+  document.getElementById('modalAppName').textContent = app.name;
+  document.getElementById('modalAppSub').textContent = `${app.id} · ${app.capability}`;
+  document.getElementById('modalPco').textContent = app.pco || 'Unassigned';
+  document.getElementById('modalTo').textContent = app.to || 'Unassigned';
+  document.getElementById('modalStatus').innerHTML = statusBadge(app.status);
+  document.getElementById('modalChecklist').innerHTML = app.checklist.map(c=>`
+    <div class="check-row ${c.done?'done':''}"><div class="check-box">${c.done?'✓':''}</div><div class="check-label">${c.label}</div><div class="check-meta">${c.done?'Complete':'Outstanding'}</div></div>
+  `).join('');
+  document.getElementById('modalAttestBtn').style.display = app.status === "Confirmed" ? 'none' : 'inline-flex';
+  document.getElementById('appModalOverlay').classList.add('open');
+}
+function attestFromModal(){ if(currentModalApp){ quickAttest(currentModalApp.id); closeModal('appModalOverlay'); } }
+
+/* ===================================================================
+   ITAM · OWNER APPLICATIONS
+=================================================================== */
+function renderOwnerAppsTable(){
+  const search = (document.getElementById('ownerSearch').value || '').toLowerCase();
+  const statusF = document.getElementById('ownerStatusFilter').value;
+  let rows = applications.filter(a=>{
+    if(statusF !== 'all' && a.status !== statusF) return false;
+    if(search){
+      const hay = (a.name+" "+a.id+" "+(a.pco||"")+" "+(a.to||"")).toLowerCase();
+      if(!hay.includes(search)) return false;
+    }
+    return true;
+  }).sort((a,b)=> a.lastAttested - b.lastAttested);
+
+  document.getElementById('ownerAppsTableBody').innerHTML = rows.length ? rows.map(a=>`
+    <tr>
+      <td><div class="app-cell"><div class="n">${a.name}</div><div class="i mono">${a.id}</div></div></td>
+      <td>${personCell(a.pco)}</td>
+      <td>${personCell(a.to)}</td>
+      <td>${a.wave}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>${fmtDate(a.lastAttested)}</td>
+      <td>
+        <a class="row-link" onclick="openAppModal('${a.id}')">View</a>
+        &nbsp;·&nbsp;
+        <a class="row-link" onclick="openOwnerModal('${a.id}')">Reassign</a>
+      </td>
+    </tr>
+  `).join('') : `<tr><td colspan="7"><div class="empty-state"><h4>No applications match this filter</h4><p>Try a different search or status.</p></div></td></tr>`;
+}
+function openOwnerModal(id){
+  currentOwnerModalApp = applications.find(a=>a.id===id);
+  document.getElementById('ownerModalSub').textContent = `${currentOwnerModalApp.name} · ${currentOwnerModalApp.id}`;
+  document.getElementById('reassignName').value = '';
+  document.getElementById('reassignReason').value = '';
+  document.getElementById('ownerModalOverlay').classList.add('open');
+}
+function submitReassign(){
+  const role = document.getElementById('reassignRole').value;
+  const name = document.getElementById('reassignName').value.trim();
+  if(!name){ showToast('Enter a name for the new owner.'); return; }
+  const app = currentOwnerModalApp;
+  if(role === 'pco') app.pco = name; else app.to = name;
+  if(app.status === "Unclaimed" && app.pco && app.to) app.status = "Pending";
+  closeModal('ownerModalOverlay');
+  renderAll();
+  showToast(`${app.name} reassigned to ${name}.`);
+}
+
+/* ===================================================================
+   ITAM · UNCLAIMED APPLICATIONS
+=================================================================== */
+function renderUnclaimed(){
+  const unclaimed = applications.filter(a=>a.status==="Unclaimed");
+  document.getElementById('navUnclaimedCount').textContent = unclaimed.length;
+  document.getElementById('notifDot').textContent = unclaimed.length;
+  document.getElementById('unclaimedTableBody').innerHTML = unclaimed.length ? unclaimed.map(a=>{
+    const meta = unclaimedMeta[a.id] || {reason:'Unresolved ownership gap', flaggedOn:a.lastAttested};
+    return `
+    <tr>
+      <td><div class="app-cell"><div class="n">${a.name}</div><div class="i mono">${a.id}</div></div></td>
+      <td style="max-width:220px;">${meta.reason}</td>
+      <td>${a.pco || a.to || 'None on record'}</td>
+      <td>$${a.spend.toLocaleString()}</td>
+      <td>${fmtDate(meta.flaggedOn)}</td>
+      <td><button class="btn btn-sm btn-gold" onclick="openOwnerModal('${a.id}')">Assign owner</button></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="6"><div class="empty-state"><h4>No unclaimed applications</h4><p>Every application currently has an identified owner.</p></div></td></tr>`;
+}
+
+/* ===================================================================
+   MISC
+=================================================================== */
+function closeModal(id){ document.getElementById(id).classList.remove('open'); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+function renderAll(){
+  renderAttestationDashboard();
+  renderMyTasks();
+  renderOwnerAppsTable();
+  renderUnclaimed();
+}
+renderAll();
+</script>
+</body>
+</html>
